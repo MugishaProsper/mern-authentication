@@ -32,13 +32,13 @@ export const login = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if(!user){
-      return res.status(401).json({ message : "User already exists" });
+      return res.status(401).json({ message : "User not found" });
     };
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if(!isPasswordValid){
       return res.status(401).json({ message : "Invalid password" });
     };
-    await generateTokenAndSetCookie();
+    await generateTokenAndSetCookie(user._id, res);
     res.status(200).json({ message : 'Login successful', user });
   } catch (error) {
     console.error(error.message);
@@ -64,11 +64,12 @@ export const verifyCode = async (req, res) => {
     if(!user){
       return res.status(404).json({ message : "User not found" });
     };
-    if(code === user.verification_code){
-      user.isVerified = true;
-      await user.save();
-      return res.status(200).json({ message : "Verified successfully" });
+    if(code !== user.verification_code){
+      return res.status(400).json({ message : "Invalid verification code" });
     }
+    user.isVerified = true
+    await user.save();
+    return res.status(200).json({ message : "Code verified successfully"});
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message : "Server error" });
