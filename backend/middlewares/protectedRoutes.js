@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import { User } from '../models/user.models';
+import { User } from '../models/user.models.js';
 dotenv.config();
 
 export const protectRoutes = async (req, res, next) => {
@@ -9,11 +9,11 @@ export const protectRoutes = async (req, res, next) => {
     if(!token){
       return res.status(404).json({ message : "Token not found" });
     }
-    const decoded = jwt.verify(token, jwt_secret);
+    const decoded = jwt.verify(token, process.env.jwt_secret);
     if(!decoded){
       return res.status(401).json({ message : "No token found" })
     };
-    const user = await User.findById(decoded.userId).select("-password");
+    const user = await User.findById(decoded.id).select("-password");
     if(!user){
       return res.status(401).json({ message : "No token found" });
     };

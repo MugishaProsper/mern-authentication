@@ -1,7 +1,8 @@
 import User from '../models/user.models.js';
 import bcrypt from 'bcryptjs';
 import { generateTokenAndSetCookie } from '../utils/generate.token.js'
-import { sendVerificationEmail } from '../config/verification.config.js';
+import { sendVerificationEmail } from '../config/email.config.js';
+import { generateVerificationCode } from '../utils/generate.verification.code.js';
 
 export const register = async (req, res) => {
   const { firstName, lastName, username, email, password } = req.body;
@@ -10,17 +11,13 @@ export const register = async (req, res) => {
     if(user_exists){
       return res.status(401).json({ message : 'User already exists' })
     };
-
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    const profilePic = `https://avatar.iran.liara.run/username?username=${firstName}+${lastName}`
-
+    const profilePic = `https://avatar.iran.liara.run/username?username=${firstName}+${lastName}`;
     const newUser = new User({ firstName, lastName, username, email, password : hashedPassword, profilePic : profilePic });
-
     await newUser.save();
-
-    return res.status(200).json({ message : "Signup successful", newUser });
-    
+    const verificationCode = generateVerificationCode();
+    await sendVerificationEmail(newUser.email, verificationCode);
+    return res.status(200).json({ message : "Signup successful" });
   } catch (error) {
     console.error(error.message);
     return res.status(500).json({ message : "Server error" });
@@ -30,7 +27,7 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email : email });
     if(!user){
       return res.status(401).json({ message : "User not found" });
     };
@@ -39,7 +36,7 @@ export const login = async (req, res) => {
       return res.status(401).json({ message : "Invalid password" });
     };
     await generateTokenAndSetCookie(user._id, res);
-    res.status(200).json({ message : 'Login successful', user });
+    res.status(200).json({ message : 'Login successful' });
   } catch (error) {
     console.error(error.message);
     return res.status(500).json({ message : "Server error" });
@@ -75,20 +72,3 @@ export const verifyCode = async (req, res) => {
     res.status(500).json({ message : "Server error" });
   }
 };
-
-export const sendVerificationCode = async (req, res) => {
-  const userId = req.user._id;
-  try {
-    const user = await User.findById(userId);
-    if(!user){
-      return res.status(404).json({ message : "User not found" });
-    };
-    const verification_code = generateVerificationCode();
-
-    /** Sending generated verification code to the user algorithm */
-    await sendVerificationEmail(user.email, verification_code)
-  } catch (error) {
-    console.error(error.message);
-    return res.status(500).json({ message : "Server error" });
-  }
-}
