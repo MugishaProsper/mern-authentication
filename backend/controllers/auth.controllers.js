@@ -12,12 +12,12 @@ export const register = async (req, res) => {
       return res.status(401).json({ message : 'User already exists' })
     };
     const hashedPassword = await bcrypt.hash(password, 10);
-    const profilePic = `https://avatar.iran.liara.run/username?username=${firstName}+${lastName}`;
-    const newUser = new User({ firstName, lastName, username, email, password : hashedPassword, profilePic : profilePic });
-    await newUser.save();
     const verificationCode = generateVerificationCode();
+    const profilePic = `https://avatar.iran.liara.run/username?username=${firstName}+${lastName}`;
+    const newUser = new User({ firstName, lastName, username, email, password : hashedPassword, profilePic : profilePic, verification_code : verificationCode });
+    await newUser.save();
     await sendVerificationEmail(newUser.email, verificationCode);
-    return res.status(200).json({ message : "Signup successful" });
+    return res.status(200).json({ message : "Signup successful", newUser });
   } catch (error) {
     console.error(error.message);
     return res.status(500).json({ message : "Server error" });

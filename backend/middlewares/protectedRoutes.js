@@ -4,7 +4,7 @@ import { User } from '../models/user.models.js';
 dotenv.config();
 
 export const protectRoutes = async (req, res, next) => {
-  const token = req.cookies.jwt;
+  const token = req.cookies.token;
   try {
     if(!token){
       return res.status(404).json({ message : "Token not found" });
